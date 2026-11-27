@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IOC Submit</title>
+<style>
+  :root {
+    --blue-900: #0b2a5b;
+    --blue-700: #14479e;
+    --blue-600: #1a56c4;
+    --blue-100: #dbe7fb;
+    --blue-50: #f0f5fd;
+    --ink: #14213d;
+    --muted: #5b6b87;
+    --line: #c9d6ec;
+    --bg: #f6f8fc;
+    --white: #ffffff;
+    --ok: #17703f;
+    --bad: #b3261e;
+    --warn: #8a5a00;
+    --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+    --sans: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  [hidden] { display: none !important; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: var(--sans);
+    color: var(--ink);
+    background: var(--bg);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--blue-900);
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: .2px; }
+  header span { font-size: 13px; color: #b6c8ea; }
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 24px;
+    display: grid;
+    gap: 20px;
+  }
+  section {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  .sec-head {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    font-weight: 600;
+    font-size: 14px;
+    background: var(--blue-50);
+    color: var(--blue-900);
+  }
+  .sec-body { padding: 16px; }
+  label.f { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  input[type=text], input[type=password], textarea {
+    width: 100%;
+    font: inherit;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 8px 10px;
+  }
+  input:focus, textarea:focus, button:focus-visible, .seg input:focus-visible + span {
+    outline: 2px solid var(--blue-600);
+    outline-offset: 1px;
+  }
+  textarea {
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.6;
+    min-height: 280px;
+    resize: vertical;
+    white-space: pre;
+    overflow: auto;
+  }
+  .cfg { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+
+  .work { display: grid; grid-template-columns: 3fr 2fr; gap: 20px; }
+
+  .seg { display: inline-flex; border: 1px solid var(--blue-600); border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+  .seg label { cursor: pointer; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg span {
+    display: block;
+    padding: 6px 14px;
+    font-size: 13.5px;
+    color: var(--blue-700);
+    background: #fff;
+    border-right: 1px solid var(--blue-600);
+  }
+  .seg label:last-child span { border-right: 0; }
+  .seg input:checked + span { background: var(--blue-600); color: #fff; }
+
+  .counts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .count { border: 1px solid var(--line); border-radius: 3px; padding: 8px 10px; }
+  .count b { display: block; font-size: 22px; font-weight: 600; line-height: 1.1; color: var(--blue-700); }
+  .count small { color: var(--muted); font-size: 12.5px; }
+  .count.bad b { color: var(--bad); }
+
+  .issues { margin: 0 0 12px; padding: 0; list-style: none; max-height: 150px; overflow: auto; font-family: var(--mono); font-size: 12.5px; }
+  .issues li { padding: 3px 8px; border-left: 3px solid var(--bad); background: #fdf1f0; margin-bottom: 3px; word-break: break-all; }
+  .issues li.dup { border-color: var(--warn); background: #fdf6e8; }
+
+  .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  button {
+    font: inherit;
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 8px 18px;
+    border: 1px solid var(--blue-600);
+    background: #fff;
+    color: var(--blue-700);
+  }
+  button.primary { background: var(--blue-600); color: #fff; font-weight: 600; }
+  button.primary:hover:not(:disabled) { background: var(--blue-700); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+
+  details { margin-top: 14px; }
+  summary { cursor: pointer; font-size: 13.5px; color: var(--blue-700); }
+  pre {
+    margin: 8px 0 0;
+    padding: 10px;
+    background: var(--blue-50);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    max-height: 220px;
+    overflow: auto;
+  }
+
+  #log { list-style: none; margin: 0; padding: 0; font-size: 13.5px; }
+  #log li { padding: 8px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; }
+  #log li:last-child { border-bottom: 0; }
+  #log .t { color: var(--muted); font-family: var(--mono); font-size: 12.5px; min-width: 64px; }
+  #log .ok { color: var(--ok); }
+  #log .err { color: var(--bad); }
+  #log .empty { color: var(--muted); }
+
+  select {
+    width: 100%;
+    font: inherit;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 8px 10px;
+  }
+  select:focus { outline: 2px solid var(--blue-600); outline-offset: 1px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .counts.c3 { grid-template-columns: repeat(3, 1fr); }
+  .tabs { display: flex; border-bottom: 2px solid var(--line); }
+  .tabs button {
+    border: 0; border-bottom: 3px solid transparent; margin-bottom: -2px;
+    border-radius: 0; background: transparent; padding: 10px 18px;
+    color: var(--muted); font-weight: 600;
+  }
+  .tabs button:hover { color: var(--blue-700); }
+  .tabs button.on { color: var(--blue-700); border-bottom-color: var(--blue-600); }
+
+  @media (max-width: 820px) {
+    .cfg, .work, .row2 { grid-template-columns: 1fr; }
+    .counts { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>IOC Submit</h1>
+  <span>Kirim IOC ke artefact dan buat reference set QRadar</span>
+</header>
+
+<main>
+
+  <nav class="tabs app-view" id="tabs">
+    <button type="button" data-tab="ioc" class="on">Artefact IOC</button>
+    <button type="button" data-tab="refset">Reference Set QRadar</button>
+  </nav>
+
+  <section id="settings" hidden>
+    <div class="sec-head">Pengaturan webhook</div>
+    <div class="sec-body">
+      <div>
+        <div>
+          <label class="f" for="s-url">URL webhook Artefact IOC</label>
+          <input type="text" id="s-url" placeholder="https://n8n.domain.local/webhook/..." autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <label class="f" for="s-rurl">URL webhook Reference Set</label>
+        <input type="text" id="s-rurl" placeholder="https://n8n.domain.local/webhook/..." autocomplete="off" spellcheck="false">
+      </div>
+      <div class="actions" style="margin-top:14px">
+        <button class="primary" id="s-save">Simpan</button>
+        <button id="s-back">Kembali</button>
+        <span id="s-msg" class="hint" style="margin:0"></span>
+      </div>
+      <div class="hint">Tersimpan di browser ini saja, setiap browser/PC perlu diatur sekali.</div>
+    </div>
+  </section>
+
+  <div class="work" id="view-ioc">
+    <section>
+      <div class="sec-head">Input</div>
+      <div class="sec-body">
+        <div class="seg" role="radiogroup" aria-label="Tipe data">
+          <label><input type="radio" name="mode" value="auto" checked><span>Auto</span></label>
+          <label><input type="radio" name="mode" value="ip"><span>IP</span></label>
+          <label><input type="radio" name="mode" value="domain"><span>Domain</span></label>
+          <label><input type="radio" name="mode" value="hash"><span>Hash</span></label>
+        </div>
+        <label class="f" for="input">Satu nilai per baris</label>
+        <textarea id="input" spellcheck="false" placeholder="8.8.8.8&#10;evil-domain.com&#10;44d88612fea8a8f36de82e1278abb02f"></textarea>
+        <div class="hint">Auto mendeteksi tipe per baris. Format defanged seperti <code>hxxp://evil[.]com</code> otomatis dibersihkan. Duplikat dibuang.</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head">Ringkasan</div>
+      <div class="sec-body">
+        <div class="counts">
+          <div class="count"><b id="c-ip">0</b><small>IP</small></div>
+          <div class="count"><b id="c-domain">0</b><small>Domain</small></div>
+          <div class="count"><b id="c-hash">0</b><small>Hash</small></div>
+          <div class="count bad"><b id="c-bad">0</b><small>Tidak valid</small></div>
+        </div>
+        <ul class="issues" id="issues"></ul>
+        <div class="actions">
+          <button class="primary" id="send" disabled>Kirim ke webhook</button>
+          <button id="clear">Kosongkan</button>
+        </div>
+        <details>
+          <summary>Lihat payload</summary>
+          <pre id="preview">{}</pre>
+        </details>
+      </div>
+    </section>
+  </div>
+
+  <div class="work" id="view-refset" hidden>
+    <section>
+      <div class="sec-head">Reference set baru</div>
+      <div class="sec-body">
+        <div class="row2">
+          <div>
+            <label class="f" for="rs-name">Nama reference set</label>
+            <input type="text" id="rs-name" placeholder="Blocklist_IP_Malicious" autocomplete="off" spellcheck="false">
+          </div>
+          <div>
+            <label class="f" for="rs-type">Tipe</label>
+            <select id="rs-type">
+              <option value="ALN">AlphaNumeric</option>
+              <option value="NUM">Numeric</option>
+              <option value="IP">IP</option>
+              <option value="PORT">Port</option>
+              <option value="ALNIC">AlphaNumeric (Ignore Case)</option>
+            </select>
+          </div>
+        </div>
+        <label class="f" for="rs-input">Satu nilai per baris</label>
+        <textarea id="rs-input" spellcheck="false" placeholder="data1&#10;data2&#10;data3"></textarea>
+        <div class="hint">Nilai divalidasi sesuai tipe yang dipilih. Duplikat dibuang.</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head">Ringkasan</div>
+      <div class="sec-body">
+        <div class="counts c3">
+          <div class="count"><b id="rs-c-ok">0</b><small>Valid</small></div>
+          <div class="count"><b id="rs-c-dup">0</b><small>Duplikat</small></div>
+          <div class="count bad"><b id="rs-c-bad">0</b><small>Tidak valid</small></div>
+        </div>
+        <ul class="issues" id="rs-issues"></ul>
+        <div class="actions">
+          <button class="primary" id="rs-send" disabled>Kirim ke webhook</button>
+          <button id="rs-clear">Kosongkan</button>
+        </div>
+        <details>
+          <summary>Lihat payload</summary>
+          <pre id="rs-preview">{}</pre>
+        </details>
+      </div>
+    </section>
+  </div>
+
+  <section class="app-view">
+    <div class="sec-head">Riwayat pengiriman</div>
+    <ul id="log"><li class="empty">Belum ada pengiriman.</li></ul>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  // ===== KONFIGURASI (edit di sini) =====
+  var CONFIG = {
+    WEBHOOK_URL: "isi Webhook Disini",  // webhook untuk Arte
+    HEADER_NAME: "",   // contoh: "X-API-Key" (kosongkan kalau tidak pakai auth)
+    HEADER_VALUE: "",
+    REFSET_WEBHOOK_URL: "isi Webhook Disini"   // webhook untuk Reference Set QRadar
+  };
+  // ======================================
+
+  var $ = function (id) { return document.getElementById(id); };
+  var els = {
+    input: $("input"), send: $("send"), clear: $("clear"),
+    issues: $("issues"), preview: $("preview"), log: $("log")
+  };
+  var parsed = { ip: [], domain: [], hash: [], bad: [], dup: [] };
+
+  // ---------- validasi ----------
+  function isIPv4(s) {
+    var p = s.split(".");
+    if (p.length !== 4) return false;
+    return p.every(function (x) { return /^\d{1,3}$/.test(x) && Number(x) <= 255; });
+  }
+  function isIPv6(s) {
+    return /^[0-9a-f:]+$/i.test(s) && (s.match(/:/g) || []).length >= 2 && s.length <= 39 && !/:::/.test(s);
+  }
+  function isHash(s) { return /^(?:[a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64})$/i.test(s); }
+  function isDomain(s) {
+    return s.length <= 253 &&
+      /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,62}$/i.test(s);
+  }
+
+  function clean(line) {
+    var s = line.trim().replace(/^["'`]+|["'`,;]+$/g, "").trim();
+    s = s.replace(/^hxxp/i, "http").replace(/^fxp/i, "ftp");
+    s = s.replace(/\[\.\]|\(\.\)|\{\.\}|\[dot\]|\(dot\)/gi, ".").replace(/\[:\]/g, ":").replace(/\[@\]/g, "@");
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(s)) {
+      try { s = new URL(s).hostname; } catch (e) {}
+    }
+    return s.replace(/^\[|\]$/g, "");
+  }
+
+  function classify(v) {
+    if (isIPv4(v) || isIPv6(v)) return "ip";
+    if (isHash(v)) return "hash";
+    if (isDomain(v)) return "domain";
+    return null;
+  }
+
+  function mode() { return document.querySelector("input[name=mode]:checked").value; }
+
+  // ---------- parsing ----------
+  function parse() {
+    var m = mode();
+    var out = { ip: [], domain: [], hash: [], bad: [], dup: [] };
+    var seen = {};
+    els.input.value.split(/\r?\n/).forEach(function (raw, i) {
+      if (!raw.trim()) return;
+      var v = clean(raw);
+      var t = classify(v);
+      if (t && m !== "auto" && t !== m) t = null;
+      if (!t) { out.bad.push({ n: i + 1, raw: raw.trim() }); return; }
+      if (t !== "ip" || v.indexOf(":") === -1) v = v.toLowerCase();
+      var key = t + "|" + v;
+      if (seen[key]) { out.dup.push({ n: i + 1, raw: raw.trim() }); return; }
+      seen[key] = 1;
+      out[t].push(v);
+    });
+    return out;
+  }
+
+  function buildPayload() {
+    var ioc = {}, total = 0;
+    ["ip", "domain", "hash"].forEach(function (t) {
+      if (parsed[t].length) { ioc[t] = parsed[t]; total += parsed[t].length; }
+    });
+    return total ? { ioc: ioc } : null;
+  }
+
+  // ---------- tampilan ----------
+  function refresh() {
+    parsed = parse();
+    $("c-ip").textContent = parsed.ip.length;
+    $("c-domain").textContent = parsed.domain.length;
+    $("c-hash").textContent = parsed.hash.length;
+    $("c-bad").textContent = parsed.bad.length;
+
+    els.issues.textContent = "";
+    parsed.bad.slice(0, 50).forEach(function (b) {
+      var li = document.createElement("li");
+      li.textContent = "baris " + b.n + ": " + b.raw;
+      els.issues.appendChild(li);
+    });
+    parsed.dup.slice(0, 50).forEach(function (d) {
+      var li = document.createElement("li");
+      li.className = "dup";
+      li.textContent = "baris " + d.n + ": duplikat, dilewati";
+      els.issues.appendChild(li);
+    });
+
+    var p = buildPayload();
+    els.preview.textContent = p ? JSON.stringify(p, null, 2) : "{}";
+    els.send.disabled = !(p && CONFIG.WEBHOOK_URL);
+  }
+
+  els.input.addEventListener("input", refresh);
+  document.querySelectorAll("input[name=mode]").forEach(function (r) { r.addEventListener("change", refresh); });
+  els.clear.addEventListener("click", function () { els.input.value = ""; refresh(); els.input.focus(); });
+
+  // ---------- log ----------
+  function addLog(ok, text) {
+    var first = els.log.querySelector(".empty");
+    if (first) els.log.removeChild(first);
+    var li = document.createElement("li");
+    var t = document.createElement("span");
+    t.className = "t";
+    t.textContent = new Date().toLocaleTimeString("id-ID", { hour12: false });
+    var s = document.createElement("span");
+    s.className = ok ? "ok" : "err";
+    s.textContent = text;
+    li.appendChild(t); li.appendChild(s);
+    els.log.insertBefore(li, els.log.firstChild);
+  }
+
+  // ---------- kirim ----------
+  els.send.addEventListener("click", async function () {
+    var url = CONFIG.WEBHOOK_URL;
+    var payload = buildPayload();
+    if (!url || !payload) return;
+
+    var headers = { "Content-Type": "application/json" };
+    if (CONFIG.HEADER_NAME) headers[CONFIG.HEADER_NAME] = CONFIG.HEADER_VALUE;
+
+    var summary = Object.keys(payload.ioc).map(function (t) {
+      return t + " " + payload.ioc[t].length;
+    }).join(", ");
+
+    els.send.disabled = true;
+    try {
+      var res = await fetch(url, { method: "POST", headers: headers, body: JSON.stringify(payload) });
+      if (res.ok) {
+        addLog(true, "Artefact IOC: terkirim (" + summary + "), HTTP " + res.status);
+        els.input.value = "";
+      } else {
+        addLog(false, "Artefact IOC: gagal, HTTP " + res.status);
+      }
+    } catch (e) {
+      addLog(false, "Artefact IOC: tidak bisa terhubung. Cek URL, jaringan, dan pengaturan CORS webhook.");
+    }
+    refresh();
+  });
+
+  // ---------- reference set QRadar ----------
+  var rs = { name: $("rs-name"), type: $("rs-type"), input: $("rs-input"), send: $("rs-send"),
+             clear: $("rs-clear"), issues: $("rs-issues"), preview: $("rs-preview") };
+  var rsParsed = { values: [], bad: [], dup: [] };
+
+  function rsValid(v, t) {
+    if (t === "NUM") return /^-?\d+$/.test(v);
+    if (t === "IP") return isIPv4(v) || isIPv6(v);
+    if (t === "PORT") return /^\d{1,5}$/.test(v) && Number(v) <= 65535;
+    return v.length > 0; // ALN, ALNIC
+  }
+
+  function rsParse() {
+    var t = rs.type.value, out = { values: [], bad: [], dup: [] }, seen = {};
+    rs.input.value.split(/\r?\n/).forEach(function (raw, i) {
+      var v = raw.trim();
+      if (!v) return;
+      if (!rsValid(v, t)) { out.bad.push({ n: i + 1, raw: v }); return; }
+      var key = t === "ALNIC" ? v.toLowerCase() : v;
+      if (seen[key]) { out.dup.push({ n: i + 1 }); return; }
+      seen[key] = 1;
+      out.values.push(v);
+    });
+    return out;
+  }
+
+  function rsPayload() {
+    var name = rs.name.value.trim();
+    if (!name || !rsParsed.values.length) return null;
+    return { name: name, type: rs.type.value, values: rsParsed.values };
+  }
+
+  function refreshRs() {
+    rsParsed = rsParse();
+    $("rs-c-ok").textContent = rsParsed.values.length;
+    $("rs-c-dup").textContent = rsParsed.dup.length;
+    $("rs-c-bad").textContent = rsParsed.bad.length;
+    rs.issues.textContent = "";
+    rsParsed.bad.slice(0, 50).forEach(function (b) {
+      var li = document.createElement("li");
+      li.textContent = "baris " + b.n + ": " + b.raw;
+      rs.issues.appendChild(li);
+    });
+    rsParsed.dup.slice(0, 50).forEach(function (d) {
+      var li = document.createElement("li");
+      li.className = "dup";
+      li.textContent = "baris " + d.n + ": duplikat, dilewati";
+      rs.issues.appendChild(li);
+    });
+    var p = rsPayload();
+    rs.preview.textContent = p ? JSON.stringify(p, null, 2) : "{}";
+    rs.send.disabled = !(p && CONFIG.REFSET_WEBHOOK_URL);
+  }
+
+  [rs.name, rs.input].forEach(function (e) { e.addEventListener("input", refreshRs); });
+  rs.type.addEventListener("change", refreshRs);
+  rs.clear.addEventListener("click", function () { rs.input.value = ""; refreshRs(); rs.input.focus(); });
+
+  rs.send.addEventListener("click", async function () {
+    var payload = rsPayload();
+    if (!payload || !CONFIG.REFSET_WEBHOOK_URL) return;
+    var headers = { "Content-Type": "application/json" };
+    if (CONFIG.HEADER_NAME) headers[CONFIG.HEADER_NAME] = CONFIG.HEADER_VALUE;
+    var label = "Reference set " + payload.name + " (" + payload.type + ", " + payload.values.length + " nilai)";
+    rs.send.disabled = true;
+    try {
+      var res = await fetch(CONFIG.REFSET_WEBHOOK_URL, { method: "POST", headers: headers, body: JSON.stringify(payload) });
+      if (res.ok) { addLog(true, label + ": terkirim, HTTP " + res.status); rs.input.value = ""; }
+      else addLog(false, label + ": gagal, HTTP " + res.status);
+    } catch (e) {
+      addLog(false, label + ": tidak bisa terhubung. Cek URL, jaringan, dan pengaturan CORS webhook.");
+    }
+    refreshRs();
+  });
+
+  // ---------- tab ----------
+  var tab = "ioc";
+  function applyTab() {
+    var on = onSettings();
+    $("view-ioc").hidden = on || tab !== "ioc";
+    $("view-refset").hidden = on || tab !== "refset";
+    document.querySelectorAll("#tabs button").forEach(function (b) {
+      b.classList.toggle("on", b.getAttribute("data-tab") === tab);
+    });
+  }
+  document.querySelectorAll("#tabs button").forEach(function (b) {
+    b.addEventListener("click", function () { tab = b.getAttribute("data-tab"); applyTab(); });
+  });
+
+  // ---------- pengaturan tersembunyi di /suki (atau #suki) ----------
+  try {
+    var saved = JSON.parse(localStorage.getItem("ioc_cfg") || "{}");
+    Object.keys(CONFIG).forEach(function (k) { if (saved[k]) CONFIG[k] = saved[k]; });
+  } catch (e) {}
+
+  var sRurl = $("s-rurl"), sUrl = $("s-url"), sMsg = $("s-msg");
+  function onSettings() { return /\/suki\/?$/.test(location.pathname) || location.hash === "#suki"; }
+  function route() {
+    var on = onSettings();
+    $("settings").hidden = !on;
+    document.querySelectorAll(".app-view").forEach(function (e) { e.hidden = on; });
+    if (on) {
+      sUrl.value = CONFIG.WEBHOOK_URL; sRurl.value = CONFIG.REFSET_WEBHOOK_URL;
+      sMsg.textContent = "";
+    }
+    applyTab();
+    refresh();
+    refreshRs();
+  }
+  $("s-save").addEventListener("click", function () {
+    CONFIG.WEBHOOK_URL = sUrl.value.trim();
+    CONFIG.REFSET_WEBHOOK_URL = sRurl.value.trim();
+    try { localStorage.setItem("ioc_cfg", JSON.stringify(CONFIG)); sMsg.textContent = "Tersimpan."; }
+    catch (e) { sMsg.textContent = "Gagal menyimpan di browser ini."; }
+  });
+  $("s-back").addEventListener("click", function () {
+    if (location.hash === "#suki") location.hash = "";
+    else location.href = location.pathname.replace(/suki\/?$/, "");
+  });
+  window.addEventListener("hashchange", route);
+
+  route();
+})();
+</script>
+</body>
+</html>
